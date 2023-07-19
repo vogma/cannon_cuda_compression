@@ -3,7 +3,8 @@ Implementation of cannon's algorithm using MPI and CUDA to explore the use of Co
 
 
 ## Prerequisites
-- CMake >= 3.15
+- CMake >= 3.18
+- GCC >= 10.3.0
 - Linux (tested on x86_64)
 - Boost >= 1.66
 - Cuda >= 11.3
