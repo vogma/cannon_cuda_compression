@@ -1,42 +1,39 @@
 #include "matrix_functions.h"
 
-#include <math.h>
-#include <mpi.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/time.h>
-#include <time.h>
-// #include
-// </p/project/icei-hbp-2022-0013/vogel6/cannons_algorithm_cuda/cudaMatrixMultiply.h>
 #include "cuda_runtime.h"
 #include <cudaMatrixMultiply.h>
 #include <iostream>
+#include <math.h>
+#include <mpi.h>
 #include <ndzip_api.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string>
+#include <sys/time.h>
+#include <time.h>
 
-// Abkürzung für die Überprüfung, ob der aktuelle Prozess der Wurzelprozess ist
+// checking whether the current process is the root process
 #define IS_ROOT (rank == 0)
 
 #define PRINTSIZELIMIT 11
-// #define DEBUG
 
-// Verweise auf die lokalen Matrizen
+// references to the local matrices
 double *subMatA = NULL, *subMatB = NULL, *subMatC = NULL;
 
-// Verweise auf die Ein- und Ausgabematrizen (allokiert beim Wurzelprozess)
+// references to the input and output matrices
 double *matA = NULL, *matB = NULL;
 double *matC = NULL;
 
 double *matCheck = NULL;
 
-// Verweise auf die lokalen Matrizen im GPU Speicher
+// references to the local matrices in GPU memory
 double *d_subMatA = NULL;
 double *d_subMatB = NULL;
 double *d_subMatC = NULL;
 
 double *subMatCheck = NULL;
 
-// Verweise auf die Ein- und Ausgabematrizen auf der GPU
+// References to the input and output matrices on the GPU.
 double *d_matA = NULL;
 double *d_matB = NULL;
 double *d_matC = NULL;
@@ -49,16 +46,12 @@ double *d_receive_buffer_b = NULL;
 
 NDZIP_API *NDZIP_API_instance = NULL;
 
-/**
- * Reserviert Speicher für eine Submatrix
- */
 double *allocateSubmatrix(double *subMat, double bytes, int rank) {
   if (!(subMat = (double *)malloc(bytes))) {
     fprintf(
         stderr,
         "Prozessor %d: Speicherzuweisung für %d bytes ist fehlgeschlagen.\n",
         rank, bytes);
-    // Freigabe der bis jetzt allokierten Speicher
     if (IS_ROOT) {
       free(matA);
       free(matB);
@@ -71,17 +64,6 @@ double *allocateSubmatrix(double *subMat, double bytes, int rank) {
     MPI_Abort(MPI_COMM_WORLD, 4);
   }
   return subMat;
-}
-
-/** Implementiert die sequenzielle Version der Matrix-Matrix Multiplikation
- * @param n die Anzahl Elemente pro Matrixblock. n muss eine Quadratzahl sein.
- * @param *a, *b Verweise auf die Eingabematrizen
- * @param *c Verweis auf die Ausgabematrizen**/
-void MatrixMultiply(int n, double *a, double *b, double *c) {
-  for (int i = 0; i < n; i++)
-    for (int j = 0; j < n; j++)
-      for (int k = 0; k < n; k++)
-        c[i * n + j] += a[i * n + k] * b[k * n + j];
 }
 
 bool isSquare(int x) {
@@ -111,13 +93,13 @@ void MatrixMatrixMultiplyCuda(int n, double *d_a, double *d_b, double *d_c,
   //
   MPI_Comm comm_2d;
 
-  /*Schritt 1: Sammlung der Informationen über den von MPI vorgegebenen
-    Kommunikator
+  /*Step 1: Collection of information about the MPI specified communicator
     ================================================================================*/
   MPI_Comm_size(comm, &npes);
   MPI_Comm_rank(comm, &myrank);
 
-  // unsafe but npes is guaranteed to be square
+  /*Step 2: Cartesian topology setup
+    ===================================================*/
   procs_per_dim = (int)sqrt(npes);
 
   /*Schritt 2: Einrichtung einer Kartesischen Topologie
@@ -126,35 +108,26 @@ void MatrixMatrixMultiplyCuda(int n, double *d_a, double *d_b, double *d_c,
   periods[0] = periods[1] = 1;
   MPI_Cart_create(comm, 2, dims, periods, 1, &comm_2d);
 
-  /* Bestimmung des Ranges und der Koordinaten bezüglich der neuen Topologie */
+  /*Determination of the rank and coordinates with respect to the new topology*/
   MPI_Comm_rank(comm_2d, &my2drank);
   MPI_Cart_coords(comm_2d, my2drank, 2, mycoords);
 
-  /*Schritt 3: Initiale Verschiebung
+  /*Step 3: Initial alignment
    =================================*/
-  /* Berechnung der Ränge der Komminikationspartners links, rechts, oben und
-   * unten*/
   MPI_Cart_shift(comm_2d, 1, -1, &rightrank,
                  &leftrank);                          // i. e. dim[1] is X-coord
   MPI_Cart_shift(comm_2d, 0, -1, &downrank, &uprank); // i. e. dim[0] is Y-coord
 
-  /* Bestimmung der Größe von lokalen Matrizen*/
+  /* size of local matrix*/
   nlocal = n / dims[0];
 
-  /* Durchführung der initialen Verschiebung für die Matrix A */
   MPI_Cart_shift(comm_2d, 1, -mycoords[0], &shiftsource, &shiftdest);
-  // This is different to the solution from the book by GRAMA:
-  // above we chose that dim[1] is X-coord (column)
-  // Matrix A has to be shifted left according to the own Y-position
 
   MPI_Sendrecv_replace(d_a, nlocal * nlocal, MPI_DOUBLE, shiftdest, 1,
                        shiftsource, 1, comm_2d, &status);
 
-  /* Durchführung der initialen Verschiebung für die Matrix B */
+  /* Initial alignment for Matrix B */
   MPI_Cart_shift(comm_2d, 0, -mycoords[1], &shiftsource, &shiftdest);
-  // This is different to the solution from the book by GRAMA:
-  // above we chose that dim[0] is Y-coord (column)
-  // Matrix B has to be shifted up according to the own X-position
 
   MPI_Sendrecv_replace(d_b, nlocal * nlocal, MPI_DOUBLE, shiftdest, 1,
                        shiftsource, 1, comm_2d, &status);
@@ -165,12 +138,9 @@ void MatrixMatrixMultiplyCuda(int n, double *d_a, double *d_b, double *d_c,
   int recv_compressed_length_a;
   int recv_compressed_length_b;
 
-  /* Hauptschleife */
   for (i = 0; i < dims[0]; i++) {
-
-    /*Lokale Berechnungen
-      -------------------*/
-
+    
+    /*local computation*/
     start_timing_compute = MPI_Wtime();
     multiplyMatrixCuda(d_a, d_b, d_c, nlocal);
     end_timing_compute = MPI_Wtime();
@@ -186,6 +156,7 @@ void MatrixMatrixMultiplyCuda(int n, double *d_a, double *d_b, double *d_c,
     end_timing_compression = MPI_Wtime();
 
     start_timing_comm = MPI_Wtime();
+
     //-----------------------shift a left----------------------------//
     if (my2drank != 0 && (my2drank % procs_per_dim != 0)) {
 
@@ -261,14 +232,11 @@ void MatrixMatrixMultiplyCuda(int n, double *d_a, double *d_b, double *d_c,
     //-----------------------------------------------------------------------
   }
 
-  /* Herstellung der initialen Verteilung von Matrizen A und B */
   MPI_Cart_shift(comm_2d, 1, +mycoords[0], &shiftsource, &shiftdest);
-  // again, this is different to the solution from the book by GRAMA:
   MPI_Sendrecv_replace(d_a, nlocal * nlocal, MPI_DOUBLE, shiftdest, 1,
                        shiftsource, 1, comm_2d, &status);
 
   MPI_Cart_shift(comm_2d, 0, +mycoords[1], &shiftsource, &shiftdest);
-  // again, this is different to the solution from the book by GRAMA:
   MPI_Sendrecv_replace(d_b, nlocal * nlocal, MPI_DOUBLE, shiftdest, 1,
                        shiftsource, 1, comm_2d, &status);
 
@@ -277,28 +245,14 @@ void MatrixMatrixMultiplyCuda(int n, double *d_a, double *d_b, double *d_c,
 
 int main(int argc, char *argv[]) {
 
-  // FILE *out_file = fopen(argv[2], "w");
-
-  // if (out_file == NULL) {
-  //   printf("Error! Could not open file");
-  //   return -1;
-  // }
-
   int n = std::stoi(argv[1]);
 
   NDZIP_API_instance = new NDZIP_API();
 
-  // fprintf(out_file, "0\n");
-  // fprintf(out_file, "1 1024\n");
-  // start_main
   double t_start_timing0, t_end_timing0, runtime_timing0;
   t_start_timing0 = MPI_Wtime();
 
   int size, rank;
-
-  // size_t n = 16384;
-  //  size_t n = 15376;
-  //  size_t n = 11500;
 
   MPI_Init(NULL, NULL);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -307,21 +261,20 @@ int main(int argc, char *argv[]) {
            "Prozessoren gestartet werden!\n");
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
-  // Anzahl Matrixblöcke in die X-Richtung und die Y-Richtung
+  // Number of matrix blocks in the X-direction and the Y-direction
   int tilesX;
   int tilesY;
 
-  // Anzahl Elemente pro Block in die X-Richtung
+  // Number of elements per block in the X direction
   int tileSizeX;
   int tileSizeY;
 
-  // Bestimme die Anzahl der Matrixblöcke
+  // number of matrix blocks
   tilesX = sqrtf(size);
   tilesY = tilesX;
 
-  // Bestimme die Größe eines Matrixblocks
+  // size of matrix block
   tileSizeX = n / tilesX;
-  // TODO check if we really need it
   tileSizeY = n / tilesY;
   double t_start_init0, t_end_init0, runtime_init0;
 
@@ -329,7 +282,6 @@ int main(int argc, char *argv[]) {
 
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   if (IS_ROOT) {
-    // Initialisierung
 
     init_matrix(&matA, n, n, false, argv[2]);
     init_matrix(&matB, n, n, false, argv[2]);
@@ -347,9 +299,7 @@ int main(int argc, char *argv[]) {
     cudaDeviceSynchronize();
   }
   if (size > 1) {
-    // begin
 
-    // Allokierung der lokalen Matrizen
     subMatA = allocateSubmatrix(
         subMatA, (double)tileSizeX * tileSizeX * sizeof(double), rank);
     subMatB = allocateSubmatrix(
@@ -373,14 +323,7 @@ int main(int argc, char *argv[]) {
 
     cudaDeviceSynchronize();
 
-    // Verteilung der Matrix A
-    // MPI_Scatter(matA, tileSizeX * tileSizeX, MPI_DOUBLE, subMatA,
-    //          tileSizeX * tileSizeX, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    // Verteilung der Matrix B
-    // MPI_Scatter(matB, tileSizeX * tileSizeX, MPI_DOUBLE, subMatB,
-    //          tileSizeX * tileSizeX, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-    // Verteilung der Matrizen zwischen den GPU's
+    // Distribution of matrices between GPU's
     MPI_Scatter(d_matA, tileSizeX * tileSizeX, MPI_DOUBLE, d_subMatA,
                 tileSizeX * tileSizeX, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Scatter(d_matB, tileSizeX * tileSizeX, MPI_DOUBLE, d_subMatB,
@@ -390,23 +333,18 @@ int main(int argc, char *argv[]) {
     t_end_init0 = MPI_Wtime();
 
     runtime_init0 = t_end_init0 - t_start_init0;
-    //(out_file, "init_0: %f\n", runtime_init0);
   }
 
   double t_start_compute0, t_end_compute0, runtime_compute0;
   t_start_compute0 = MPI_Wtime();
 
-  if (size == 1) {
-    MatrixMultiply(n, matA, matB, matC);
-  } else {
+  MatrixMatrixMultiplyCuda(tilesX * tileSizeX, d_subMatA, d_subMatB, d_subMatC,
+                           MPI_COMM_WORLD);
 
-    MatrixMatrixMultiplyCuda(tilesX * tileSizeX, d_subMatA, d_subMatB,
-                             d_subMatC, MPI_COMM_WORLD);
+  // Collection of results from all GPU's
+  MPI_Gather(d_subMatC, tileSizeX * tileSizeX, MPI_DOUBLE, d_matC,
+             tileSizeX * tileSizeX, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-    // Sammlung der Ergebnisse aller GPU's
-    MPI_Gather(d_subMatC, tileSizeX * tileSizeX, MPI_DOUBLE, d_matC,
-               tileSizeX * tileSizeX, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-  }
   if (rank == 0) {
     t_end_compute0 = MPI_Wtime();
 
@@ -414,36 +352,10 @@ int main(int argc, char *argv[]) {
                cudaMemcpyDeviceToHost);
     cudaDeviceSynchronize();
 
-    // print_matrix(matA, n, n);
-    // printf("\n");
-    // print_matrix(matB, n, n);
-    // printf("\n\n");
-    // printf("-----------------------\n");
-    // print_matrix(matCheck, n, n);
-    // printf("-----------------------\n\n\n");
-
-    // for (int i = 0; i <= 100; i++) {
-    //   if (i % 10 == 0) {
-    //     std::cout << "\n";
-    //   }
-    //   std::cout << matCheck[i] << " ";
-    // }
-
     runtime_compute0 = t_end_compute0 - t_start_compute0;
-    //fprintf(out_file, "compute_0: %f\n", runtime_compute0);
   }
 
   if (IS_ROOT) {
-    // printf("Matrix C:\n");
-    // printMatrix(tileSizeX, tileSizeY, tilesX, tilesY, matC);
-
-    // printf("Zeit für die Initialisierung von Eingabedaten:     %12.6f
-    // Sek.\n", tEndInput-tStartInput); printf("Zeit für die Datenverteilung:
-    // %12.6f Sek.\n", tEndDistribution-tStartDistribution); printf("Zeit für
-    // die Matrixmultiplikation:                 %12.6f Sek.\n",
-    // tStartCollection-tEndDistribution); printf("Zeit für Sammlung der
-    // Ergebnisse:                  %12.6f Sek.\n",
-    // tEndCollection-tStartCollection);
 
     free(matA);
     free(matB);
@@ -471,7 +383,6 @@ int main(int argc, char *argv[]) {
     t_end_timing0 = MPI_Wtime();
 
     runtime_timing0 = t_end_timing0 - t_start_timing0;
-    //fprintf(out_file, "timing_0: %f\n", runtime_timing0);
   }
 
   return 0;
