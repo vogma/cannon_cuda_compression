@@ -33,8 +33,6 @@ void fill_buffer(double *send_buffer, size_t size)
 
   size = 198180864;
 
-  //std::cout << "filebuffer size (bytes): " << size << std::endl;
-
   fileptr =
       fopen("/p/scratch/icei-hbp-2022-0013/vogel6/fp64/obs_spitzer.trace", "rb");
   // fopen("/home/marco/entwicklung/uni/cannons_algorithm_cuda/num_brain.trace",
@@ -43,11 +41,6 @@ void fill_buffer(double *send_buffer, size_t size)
   buffer = (char *)malloc(size * sizeof(char));
   fread(buffer, size, sizeof(char), fileptr);
   fclose(fileptr);
-
-  for (int i = 0; i < 20; i++)
-  {
-    printf("%02x\n", buffer[i]);
-  }
 
   double *test = (double *)buffer;
 
@@ -94,42 +87,12 @@ void init_matrix(double **A_out, size_t n, size_t m, bool zeroM, int flag)
   size_t bytes = m_size * sizeof(double);
   *A_out = (double *)malloc(bytes);
 
-  printf("n: %d m: %d filebuffer: %zu\n", n, m, bytes);
-
   double *file_data = NULL;
 
   file_data = (double *)malloc(bytes);
   // fill_buffer(file_data, bytes);
   readFileData(&file_data);
 
-  // for (int i = 0; i <= 100; i++)
-  // {
-  //   if (i % 10 == 0)
-  //   {
-  //     std::cout << "\n";
-  //   }
-  //   std::cout << file_data[i] << " ";
-  // }
-
-  printf("done file read\n");
-
-  // time_t t;
-  // srand((unsigned)time(&t));
-
-  // for(int i=0;i<n;i++){
-  //   for(int j=0;j<m;j++){
-  //     if (zeroM)
-  //   {
-  //     (*A_out)[i*n+j] = 0;
-  //   }
-  //   else if(flag==0)
-  //   {
-  //     (*A_out)[i*n+j] = matA_small[i];
-  //   }else{
-  //     (*A_out)[i*n+j] = matB_small[i];
-  //   }
-  //   }
-  // }
 
   for (int i = 0; i < m_size; i++)
   {

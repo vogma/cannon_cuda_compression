@@ -1,3 +1,4 @@
+#include "ndzip_api.h"
 #include <boost/program_options.hpp>
 #include <cassert>
 #include <cstddef>
@@ -7,7 +8,6 @@
 #include <io/io.hh>
 #include <iostream>
 #include <memory>
-#include "ndzip_api.h"
 
 NDZIP_API::NDZIP_API() {
 
@@ -15,22 +15,17 @@ NDZIP_API::NDZIP_API() {
 
   size = ndzip::extent(static_cast<ndzip::dim_type>(1));
 
-  size[0] = 139497932; 
+  size[0] = 139497932;
   req = ndzip::compressor_requirements(size);
 
   cuda_compressor = ndzip::make_cuda_compressor<double>(req, nullptr);
 
   cuda_decompressor = ndzip::make_cuda_decompressor<double>(1, nullptr);
-
 }
 
 NDZIP_API::~NDZIP_API() {
-  //free(buffer);
+  // free(buffer);
   cudaFree(d_compressed_buffer_size);
-}
-
-void NDZIP_API::sayHi(const char *name) {
-  //std::cout << "Hi " << name << std::endl;
 }
 
 int NDZIP_API::compress_buffer(double *d_buffer, int buffer_size,

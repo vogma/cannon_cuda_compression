@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.18)
 project(Cannons_Algorithm VERSION 0.1 LANGUAGES CUDA CXX)
 
 find_package(MPI REQUIRED)
@@ -32,7 +32,7 @@ add_executable(Cannons_Algorithm cannon_no_comp.cpp matrix_functions.h cudaMatri
 target_compile_features(Cannons_Algorithm PRIVATE cxx_std_17)
 set_property(TARGET Cannons_Algorithm PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-add_executable(Cannons_Algorithm_Comp cannon_out_1024_1_2.cpp matrix_functions.h cudaMatrixMultiply.h)
+add_executable(Cannons_Algorithm_Comp cannon_comp.cpp matrix_functions.h cudaMatrixMultiply.h)
 target_compile_features(Cannons_Algorithm_Comp PRIVATE cxx_std_17)
 set_property(TARGET Cannons_Algorithm_Comp PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories(Cannons_Algorithm_Comp PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/ndzip/src" "${CMAKE_CURRENT_SOURCE_DIR}/ndzip/include")
@@ -43,8 +43,8 @@ target_include_directories(Cannons_Algorithm PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}
 target_link_libraries(Cannons_Algorithm PRIVATE MPI::MPI_CXX CUDA::cudart CUDA::cuda_driver ndzip ndzip-cuda ndzip_api dgemm_cuda)
 
 
-add_executable(main main.cpp)
-target_compile_features(main PRIVATE cxx_std_17)
-set_property(TARGET main PROPERTY POSITION_INDEPENDENT_CODE ON)
-target_include_directories(main PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/ndzip/src" "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/ndzip/include")
-target_link_libraries(main PRIVATE CUDA::cudart CUDA::cuda_driver ndzip ndzip-cuda ndzip_api)
+# add_executable(main main.cpp)
+# target_compile_features(main PRIVATE cxx_std_17)
+# set_property(TARGET main PROPERTY POSITION_INDEPENDENT_CODE ON)
+# target_include_directories(main PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/ndzip/src" "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/ndzip/include")
+# target_link_libraries(main PRIVATE CUDA::cudart CUDA::cuda_driver ndzip ndzip-cuda ndzip_api)

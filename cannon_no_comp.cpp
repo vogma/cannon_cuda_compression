@@ -6,8 +6,6 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <time.h>
-// #include
-// </p/project/icei-hbp-2022-0013/vogel6/cannons_algorithm_cuda/cudaMatrixMultiply.h>
 #include "cuda_runtime.h"
 #include <boost/program_options.hpp>
 #include <cudaMatrixMultiply.h>

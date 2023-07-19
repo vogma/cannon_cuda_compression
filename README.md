@@ -20,10 +20,10 @@ cmake --build build -j
 ```
 
 two executables will be build:
-- cannon_no_comp
-- cannon_comp
+- Cannons_Algorithm
+- Cannons_Algorithm_Comp
 
-Both can be used for distributed matrix multiplication using cannon's algorithm. cannon_comp compresses the subblocks before sending them to another node.
+Both can be used for distributed matrix multiplication using cannon's algorithm. Cannons_Algorithm_Comp compresses the subblocks with ndzip before sending them to another node.
 The receiving node will then decompress the data. 
 
 ## Running

@@ -9,11 +9,8 @@
 // #include
 // </p/project/icei-hbp-2022-0013/vogel6/cannons_algorithm_cuda/cudaMatrixMultiply.h>
 #include "cuda_runtime.h"
-#include <boost/program_options.hpp>
 #include <cudaMatrixMultiply.h>
-#include <io/io.hh>
 #include <iostream>
-#include <ndzip/ndzip.hh>
 #include <ndzip_api.h>
 #include <string>
 
@@ -178,8 +175,6 @@ void MatrixMatrixMultiplyCuda(int n, double *d_a, double *d_b, double *d_c,
     multiplyMatrixCuda(d_a, d_b, d_c, nlocal);
     end_timing_compute = MPI_Wtime();
 
-    std::cout << "before compression " << nlocal * nlocal << std::endl;
-
     start_timing_compression = MPI_Wtime();
 
     compressed_length_a = NDZIP_API_instance->compress_buffer(
@@ -189,8 +184,6 @@ void MatrixMatrixMultiplyCuda(int n, double *d_a, double *d_b, double *d_c,
         d_b, nlocal * nlocal * sizeof(double), d_compress_buffer_b);
 
     end_timing_compression = MPI_Wtime();
-
-    std::cout << "b after compression " << compressed_length_b << std::endl;
 
     start_timing_comm = MPI_Wtime();
     //-----------------------shift a left----------------------------//
@@ -222,16 +215,11 @@ void MatrixMatrixMultiplyCuda(int n, double *d_a, double *d_b, double *d_c,
       MPI_Recv(&recv_compressed_length_b, 1, MPI_INT, downrank, 0, comm_2d,
                &status);
 
-      std::cout << "Rank " << my2drank << " received " << compressed_length_a
-                << " MPI_DOUBLE's from rank " << rightrank << std::endl;
-
       MPI_Recv(d_receive_buffer_b, recv_compressed_length_b, MPI_DOUBLE,
                downrank, 0, comm_2d, &status);
     }
 
     MPI_Send(&compressed_length_b, 1, MPI_INT, uprank, 0, comm_2d);
-    std::cout << "Rank " << my2drank << " sending " << compressed_length_a
-              << " MPI_DOUBLE's to rank " << leftrank << std::endl;
 
     MPI_Send(d_compress_buffer_b, compressed_length_b, MPI_DOUBLE, uprank, 0,
              comm_2d);
@@ -332,7 +320,6 @@ int main(int argc, char *argv[]) {
   tilesY = tilesX;
 
   // Bestimme die Größe eines Matrixblocks
-  printf("tileSizeX: %d\n", n / tilesX);
   tileSizeX = n / tilesX;
   // TODO check if we really need it
   tileSizeY = n / tilesY;

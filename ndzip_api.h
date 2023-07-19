@@ -8,7 +8,6 @@ class NDZIP_API {
 public:
   NDZIP_API();
   ~NDZIP_API();
-  void sayHi(const char *name);
   int compress_buffer(double *d_buffer, int buffer_size,
                       uint64_t *d_compressed_buffer);
   double *decompress_buffer(uint64_t *compressed_device_buffer,
