@@ -7,34 +7,34 @@
  */
 #ifndef MATRIX_FUNCTIONS_H
 #define MATRIX_FUNCTIONS_H
+#include <fstream>
+#include <iostream>
 #include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <iostream>
 #include <time.h>
-#include <fstream>
 #define PRINT_TOTAL_WIDTH "5"
 
 #include <mpi.h>
 
-double matA_small[16] = {8.0f, 2.0f, 8.0f, 2.0f, 9.0f, 2.0f, 9.0f, 9.0f,
+double matA_small[16] = {8.0f, 2.0f, 8.0f, 2.0f, 9.0f,  2.0f, 9.0f, 9.0f,
                          6.0f, 1.0f, 4.0f, 4.0f, 10.0f, 9.0f, 4.0f, 4.0f};
 
 double matB_small[16] = {3.0f, 0.0f, 10.0f, 2.0f, 7.0f, 4.0f, 1.0f, 3.0f,
-                         1.0f, 1.0f, 0.0f, 7.0f, 2.0f, 2.0f, 4.0f, 10.0f};
+                         1.0f, 1.0f, 0.0f,  7.0f, 2.0f, 2.0f, 4.0f, 10.0f};
 
-void fill_buffer(double *send_buffer, size_t size)
-{
+void fill_buffer(char *filePath, double *send_buffer, size_t size) {
 
   FILE *fileptr;
   char *buffer;
 
   size = 198180864;
 
-  fileptr =
-      fopen("/p/scratch/icei-hbp-2022-0013/vogel6/fp64/obs_spitzer.trace", "rb");
+  std::cout << filePath << std::endl;
+
+  fileptr = fopen(filePath, "rb");
   // fopen("/home/marco/entwicklung/uni/cannons_algorithm_cuda/num_brain.trace",
   // "rb");
 
@@ -48,29 +48,28 @@ void fill_buffer(double *send_buffer, size_t size)
   free(buffer);
 }
 
-void readFileData(double **buffer)
-{
+int readFileData(double **buffer, char *filePath) {
+
+  std::cout << filePath << std::endl;
+
   char *memblock;
   std::streampos size;
-  std::ifstream file("/p/scratch/icei-hbp-2022-0013/vogel6/fp64/obs_spitzer.trace", std::ios::in | std::ios::binary | std::ios::ate);
-  if (file.is_open())
-  {
+  std::ifstream file(filePath, std::ios::in | std::ios::binary | std::ios::ate);
+  if (file.is_open()) {
     size = file.tellg();
-
-    //std::cout << "size=" << size << "\n";
 
     memblock = new char[size];
     file.seekg(0, std::ios::beg);
     file.read(memblock, size);
     file.close();
 
-    double *double_values = (double *)memblock; // reinterpret as doubles
+    double *double_values = (double *)memblock;
 
     *buffer = double_values;
-  }
-  else
-  {
+    return size;
+  } else {
     std::cout << "Error opening file" << std::endl;
+    return -1;
   }
 }
 
@@ -81,8 +80,8 @@ void readFileData(double **buffer)
     @param n,m die Anzahl Zeilen bzw. Spalten in der Ausgabematrix.
     @param zeroM zur Initialisierung mit Nullen.
 */
-void init_matrix(double **A_out, size_t n, size_t m, bool zeroM, int flag)
-{
+void init_matrix(double **A_out, size_t n, size_t m, bool zeroM,
+                 char *filePath) {
   double m_size = n * m;
   size_t bytes = m_size * sizeof(double);
   *A_out = (double *)malloc(bytes);
@@ -91,34 +90,16 @@ void init_matrix(double **A_out, size_t n, size_t m, bool zeroM, int flag)
 
   file_data = (double *)malloc(bytes);
   // fill_buffer(file_data, bytes);
-  readFileData(&file_data);
+  int bytesInFile = readFileData(&file_data, filePath);
+  int valuesInDataset = bytesInFile / sizeof(double);
 
-
-  for (int i = 0; i < m_size; i++)
-  {
-    if (zeroM)
-    {
+  for (int i = 0; i < m_size; i++) {
+    if (zeroM) {
       (*A_out)[i] = 0;
-    }
-    else if (flag == 0)
-    {
-      (*A_out)[i] = file_data[i % 24772608]; // 34874483];  matA_small[i];
-    }
-    else
-    {
-      (*A_out)[i] = file_data[i % 24772608]; // 34874483]; matB_small[i];
+    } else {
+      (*A_out)[i] = file_data[i % valuesInDataset]; // 34874483]; matB_small[i];
     }
   }
-
-  // for (int i = 0; i < m_size; i++) {
-  //   if (zeroM) {
-  //     (*A_out)[i] = 0;
-  //   } else if (flag == 0) {
-  //     (*A_out)[i] = matA_small[i % 16];
-  //   } else {
-  //     (*A_out)[i] = matB_small[i % 16];
-  //   }
-  // }
 
   free(file_data);
 };
@@ -130,8 +111,7 @@ void init_matrix(double **A_out, size_t n, size_t m, bool zeroM, int flag)
     @param n,m die Anzahl Zeilen bzw. Spalten in der Eingabematrix.
 */
 
-void copy_matrix(const double *A_in, double **A_out, int n, int m)
-{
+void copy_matrix(const double *A_in, double **A_out, int n, int m) {
   const size_t bytes = n * m * sizeof(double);
   *A_out = (double *)malloc(bytes);
   memcpy((void *)*A_out, (const void *)A_in, bytes);
@@ -149,13 +129,10 @@ void copy_matrix(const double *A_in, double **A_out, int n, int m)
     @param n die Anzahl Zeilen in der Eingabematrix.
     @param m die Anzahl Spalten in der Eingabematrix.
 */
-void print_matrix(double *A, int n, int m)
-{
-  for (int i = 0; i < n; i++)
-  {
+void print_matrix(double *A, int n, int m) {
+  for (int i = 0; i < n; i++) {
     printf("|");
-    for (int j = 0; j < m; j++)
-    {
+    for (int j = 0; j < m; j++) {
       printf("%" PRINT_TOTAL_WIDTH ".2f ", A[i * m + j]);
     }
     printf("|\n");
@@ -175,14 +152,11 @@ void print_matrix(double *A, int n, int m)
     @param n die Anzahl Zeilen in der Eingabematrix.
     @param m die Anzahl Spalten in der Eingabematrix.
 */
-void print_matrix_vector(double *A, int n, int m)
-{
+void print_matrix_vector(double *A, int n, int m) {
   // if (n <= 10){
-  for (int i = 0; i < n; i++)
-  {
+  for (int i = 0; i < n; i++) {
     printf("| ");
-    for (int j = 0; j < m - 1; j++)
-    {
+    for (int j = 0; j < m - 1; j++) {
       printf("%" PRINT_TOTAL_WIDTH ".2f ", A[i * m + j]);
     }
     // der Vektor als eine getrennte letzte Spalte

@@ -331,19 +331,10 @@ int main(int argc, char *argv[]) {
   if (IS_ROOT) {
     // Initialisierung
 
-    init_matrix(&matA, n, n, false, 0);
-    init_matrix(&matB, n, n, false, 1);
-    init_matrix(&matC, n, n, true, 1);
-    init_matrix(&matCheck, n, n, true, 1);
-
-    // for (int i = 0; i <= 100; i++)
-    // {
-    //   if (i % 10 == 0)
-    //   {
-    //     std::cout << "\n";
-    //   }
-    //   std::cout << matA[i] << " ";
-    // }
+    init_matrix(&matA, n, n, false, argv[3]);
+    init_matrix(&matB, n, n, false, argv[3]);
+    init_matrix(&matC, n, n, true, argv[3]);
+    init_matrix(&matCheck, n, n, true, argv[3]);
 
     cudaMalloc(&d_matA, (n * n * sizeof(double)));
     cudaMalloc(&d_matB, (n * n * sizeof(double)));

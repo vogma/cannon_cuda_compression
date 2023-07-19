@@ -1,17 +1,17 @@
+#include "cuda_runtime.h"
 #include "matrix_functions.h"
+#include <boost/program_options.hpp>
+#include <cudaMatrixMultiply.h>
+#include <io/io.hh>
 #include <iostream>
 #include <math.h>
 #include <mpi.h>
+#include <ndzip/ndzip.hh>
+#include <ndzip_api.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
 #include <time.h>
-#include "cuda_runtime.h"
-#include <boost/program_options.hpp>
-#include <cudaMatrixMultiply.h>
-#include <io/io.hh>
-#include <ndzip/ndzip.hh>
-#include <ndzip_api.h>
 
 #include <iostream>
 #include <string>
@@ -279,10 +279,10 @@ int main(int argc, char *argv[]) {
   if (IS_ROOT) {
     // Initialisierung
 
-    init_matrix(&matA, n, n, false, 0);
-    init_matrix(&matB, n, n, false, 1);
-    init_matrix(&matC, n, n, true, 1);
-    init_matrix(&matCheck, n, n, true, 1);
+    init_matrix(&matA, n, n, false, argv[3]);
+    init_matrix(&matB, n, n, false, argv[3]);
+    init_matrix(&matC, n, n, true, argv[3]);
+    init_matrix(&matCheck, n, n, true, argv[3]);
 
     cudaMalloc(&d_matA, (n * n * sizeof(double)));
     cudaMalloc(&d_matB, (n * n * sizeof(double)));
