@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.15)
 project(Cannons_Algorithm VERSION 0.1 LANGUAGES CUDA CXX)
 
 find_package(MPI REQUIRED)
