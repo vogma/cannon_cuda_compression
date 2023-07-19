@@ -9,15 +9,12 @@
 #include <memory>
 #include "ndzip_api.h"
 
-// msg_sppm.fp64 Bytes: 278995864 doubles: 34874483
-
 NDZIP_API::NDZIP_API() {
 
   cudaMalloc(&d_compressed_buffer_size, sizeof(unsigned int));
 
   size = ndzip::extent(static_cast<ndzip::dim_type>(1));
 
-  //size[0] = 34874483; // msg_sppm
   size[0] = 139497932; 
   req = ndzip::compressor_requirements(size);
 
