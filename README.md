@@ -37,3 +37,5 @@ The first parameter sets the size of the matrizes. For example with a given argu
 The second parameter expects a path to a binary file with double precision floating point data. With this data the matrizes will be populated. The layout of this data file has to be the same as the double precision floating point datasets provided by Martin Burtscher [[Link](https://userweb.cs.txstate.edu/~burtscher/research/datasets/FPdouble/)].
 
 This implementation has been tested on the HPC System [JUSUF](https://www.fz-juelich.de/en/ias/jsc/systems/supercomputers/jusuf), located at the Research Center in Jülich. 
+
+An example SLURM Jobscript is provided which was used for testing on JUSUF.
