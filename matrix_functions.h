@@ -25,32 +25,8 @@ double matA_small[16] = {8.0f, 2.0f, 8.0f, 2.0f, 9.0f,  2.0f, 9.0f, 9.0f,
 double matB_small[16] = {3.0f, 0.0f, 10.0f, 2.0f, 7.0f, 4.0f, 1.0f, 3.0f,
                          1.0f, 1.0f, 0.0f,  7.0f, 2.0f, 2.0f, 4.0f, 10.0f};
 
-void fill_buffer(char *filePath, double *send_buffer, size_t size) {
-
-  FILE *fileptr;
-  char *buffer;
-
-  size = 198180864;
-
-  std::cout << filePath << std::endl;
-
-  fileptr = fopen(filePath, "rb");
-  // fopen("/home/marco/entwicklung/uni/cannons_algorithm_cuda/num_brain.trace",
-  // "rb");
-
-  buffer = (char *)malloc(size * sizeof(char));
-  fread(buffer, size, sizeof(char), fileptr);
-  fclose(fileptr);
-
-  double *test = (double *)buffer;
-
-  memcpy(send_buffer, buffer, size);
-  free(buffer);
-}
 
 int readFileData(double **buffer, char *filePath) {
-
-  std::cout << filePath << std::endl;
 
   char *memblock;
   std::streampos size;
@@ -89,7 +65,7 @@ void init_matrix(double **A_out, size_t n, size_t m, bool zeroM,
   double *file_data = NULL;
 
   file_data = (double *)malloc(bytes);
-  // fill_buffer(file_data, bytes);
+
   int bytesInFile = readFileData(&file_data, filePath);
   int valuesInDataset = bytesInFile / sizeof(double);
 
@@ -97,7 +73,7 @@ void init_matrix(double **A_out, size_t n, size_t m, bool zeroM,
     if (zeroM) {
       (*A_out)[i] = 0;
     } else {
-      (*A_out)[i] = file_data[i % valuesInDataset]; // 34874483]; matB_small[i];
+      (*A_out)[i] = file_data[i % valuesInDataset];
     }
   }
 

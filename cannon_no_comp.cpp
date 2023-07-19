@@ -228,16 +228,16 @@ void MatrixMatrixMultiplyCuda(int n, double *d_a, double *d_b, double *d_c,
 
 int main(int argc, char *argv[]) {
 
-  FILE *out_file = fopen(argv[2], "w");
-  if (out_file == NULL) {
-    printf("Error! Could not open file\n");
-    return -1;
-  }
+  // FILE *out_file = fopen(argv[2], "w");
+  // if (out_file == NULL) {
+  //   printf("Error! Could not open file\n");
+  //   return -1;
+  // }
 
   int n = std::stoi(argv[1]);
 
-  fprintf(out_file, "0\n");
-  fprintf(out_file, "1 1024\n");
+  // fprintf(out_file, "0\n");
+  // fprintf(out_file, "1 1024\n");
   // start_main
   double t_start_timing0, t_end_timing0, runtime_timing0;
   t_start_timing0 = MPI_Wtime();
@@ -279,10 +279,10 @@ int main(int argc, char *argv[]) {
   if (IS_ROOT) {
     // Initialisierung
 
-    init_matrix(&matA, n, n, false, argv[3]);
-    init_matrix(&matB, n, n, false, argv[3]);
-    init_matrix(&matC, n, n, true, argv[3]);
-    init_matrix(&matCheck, n, n, true, argv[3]);
+    init_matrix(&matA, n, n, false, argv[2]);
+    init_matrix(&matB, n, n, false, argv[2]);
+    init_matrix(&matC, n, n, true, argv[2]);
+    init_matrix(&matCheck, n, n, true, argv[2]);
 
     cudaMalloc(&d_matA, (n * n * sizeof(double)));
     cudaMalloc(&d_matB, (n * n * sizeof(double)));
@@ -326,7 +326,7 @@ int main(int argc, char *argv[]) {
     t_end_init0 = MPI_Wtime();
 
     runtime_init0 = t_end_init0 - t_start_init0;
-    fprintf(out_file, "init_0: %f\n", runtime_init0);
+    // fprintf(out_file, "init_0: %f\n", runtime_init0);
   }
 
   double t_start_compute0, t_end_compute0, runtime_compute0;
@@ -366,7 +366,7 @@ int main(int argc, char *argv[]) {
     // }
 
     runtime_compute0 = t_end_compute0 - t_start_compute0;
-    fprintf(out_file, "compute_0: %f\n", runtime_compute0);
+    // fprintf(out_file, "compute_0: %f\n", runtime_compute0);
   }
 
   if (IS_ROOT) {
@@ -402,7 +402,7 @@ int main(int argc, char *argv[]) {
     t_end_timing0 = MPI_Wtime();
 
     runtime_timing0 = t_end_timing0 - t_start_timing0;
-    fprintf(out_file, "timing_0: %f\n", runtime_timing0);
+    // fprintf(out_file, "timing_0: %f\n", runtime_timing0);
   }
 
   return 0;
