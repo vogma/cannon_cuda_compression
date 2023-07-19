@@ -20,7 +20,6 @@
 #define IS_ROOT (rank == 0)
 
 #define PRINTSIZELIMIT 11
-// #define DEBUG
 
 // references to the local matrices
 double *subMatA = NULL, *subMatB = NULL, *subMatC = NULL;
@@ -109,7 +108,7 @@ void MatrixMatrixMultiplyCuda(int n, double *d_a, double *d_b, double *d_c,
   MPI_Comm_rank(comm_2d, &my2drank);
   MPI_Cart_coords(comm_2d, my2drank, 2, mycoords);
 
-  /*Schritt 3: Initial alignment
+  /*Step 3: Initial alignment
    =================================*/
 
   MPI_Cart_shift(comm_2d, 1, -1, &rightrank,
