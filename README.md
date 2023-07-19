@@ -7,7 +7,7 @@ Implementation of cannon's algorithm using MPI and CUDA to explore the use of Co
 - Linux (tested on x86_64)
 - Boost >= 1.66
 - Cuda >= 11.3
-- Cuda-Aware MPI Implementation >= 4.1.1
+- Cuda-Aware MPI Implementation (tested on OpenMPI v4.1.1)
 
 ## Building
 
