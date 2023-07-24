@@ -1,4 +1,7 @@
 # Cannon's Algorithm implemented with Cuda-Aware MPI and message compression
+
+[![DOI](https://zenodo.org/badge/668173240.svg)](https://zenodo.org/badge/latestdoi/668173240)
+
 Implementation of cannon's algorithm using MPI and CUDA to explore the use of Compression in Cuda-Aware MPI Applications. The compression relies on [ndzip](https://github.com/celerity/ndzip), which is included in this repository as a submodule
 
 
